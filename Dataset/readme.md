@@ -1,4 +1,4 @@
-\# Diretório de Datasets
+# Diretório de Datasets
 
 
 
@@ -18,13 +18,13 @@ Os datasets podem ser disponibilizados como:
 
 
 
-\- Arquivos locais organizados em estrutura Lakehouse;
+- Arquivos locais organizados em estrutura Lakehouse;
 
-\- Links externos para repositórios de datasets;
+- Links externos para repositórios de datasets;
 
-\- Referências para bases massivas armazenadas em serviços de nuvem;
+- Referências para bases massivas armazenadas em serviços de nuvem;
 
-\- Conjuntos de dados particionados devido ao grande volume de informações.
+- Conjuntos de dados particionados devido ao grande volume de informações.
 
 
 
@@ -32,11 +32,11 @@ Os datasets podem ser disponibilizados como:
 
 
 
-\- Alguns datasets podem não estar armazenados diretamente neste diretório devido ao tamanho elevado dos arquivos;
+- Alguns datasets podem não estar armazenados diretamente neste diretório devido ao tamanho elevado dos arquivos;
 
-\- Em casos de armazenamento externo, serão fornecidos links ou instruções de acesso;
+- Em casos de armazenamento externo, serão fornecidos links ou instruções de acesso;
 
-\- Recomenda-se verificar os requisitos de armazenamento e processamento antes de realizar o download completo dos dados.
+- Recomenda-se verificar os requisitos de armazenamento e processamento antes de realizar o download completo dos dados.
 
 
 
@@ -62,7 +62,7 @@ datasets/
 
 
 
-\## Objetivo
+## Objetivo
 
 
 
@@ -70,11 +70,11 @@ A organização deste diretório visa facilitar:
 
 
 
-\- Escalabilidade no armazenamento;
+- Escalabilidade no armazenamento;
 
-\- Processamento distribuído de grandes volumes de dados;
+- Processamento distribuído de grandes volumes de dados;
 
-\- Versionamento e rastreabilidade dos datasets;
+- Versionamento e rastreabilidade dos datasets;
 
-\- Integração com pipelines de Machine Learning e análise de dados.
+- Integração com pipelines de Machine Learning e análise de dados.
 
