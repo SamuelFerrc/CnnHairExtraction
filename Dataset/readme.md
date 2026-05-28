@@ -10,7 +10,7 @@ Os dados podem estar disponíveis em diferentes formatos, dependendo do volume e
 
 
 
-\## Estrutura dos Dados
+## Estrutura dos Dados
 
 
 
@@ -40,7 +40,7 @@ Os datasets podem ser disponibilizados como:
 
 
 
-\## Organização Recomendada
+## Organização Recomendada
 
 
 
