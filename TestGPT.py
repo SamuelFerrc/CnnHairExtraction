@@ -44,50 +44,87 @@ image = image.resize((768, 512))
 # =========================
 
 prompt = """
-photorealistic long brown human hair,
-only hair,
-dense natural hair strands,
-realistic hair fibers,
-smooth flowing hairstyle,
-dark brown glossy hair,
-soft specular highlights,
-realistic layered hair,
-individual fine strands,
-black background,
-studio lighting,
-high detail,
-sharp focus
+Generate ONLY the hair structure represented by the provided drawing.
+
+Use the input drawing strictly as the sole geometric and topological reference.
+
+The generated result must follow:
+- the exact flow of the strands,
+- the exact orientation,
+- the exact silhouette,
+- the exact topology,
+- the exact curvature,
+- the exact strand direction
+present in the drawing.
+
+Do NOT invent:
+- faces,
+- heads,
+- people,
+- bodies,
+- skin,
+- backgrounds,
+- extra hairstyles,
+- accessories,
+- additional geometry.
+
+The output must contain ONLY isolated realistic hair generated directly from the input sketch.
+
+Interpret the drawing as a sparse hair topology map and reconstruct a dense realistic hair structure from it.
+
+Preserve:
+- strand continuity,
+- strand alignment,
+- hair flow,
+- local topology,
+- strand grouping.
+
+Black background.
+Only hair.
+Photorealistic hair fibers.
+Dense coherent hair strands.
 """
 
 negative_prompt = """
+person,
+human,
+woman,
+man,
+face,
+eyes,
+nose,
+mouth,
+skin,
+head,
+portrait,
+body,
+shoulders,
+background,
+clothes,
+accessories,
+hat,
+ears,
+neck,
+anime,
+cartoon,
+painting,
+illustration,
 drawing,
 sketch,
 lineart,
-skeleton,
 wireframe,
-white lines,
-colored lines,
-cartoon,
-anime,
-painting,
-fake hair,
-plastic hair,
+extra hair,
+new hairstyle,
+topology changes,
+different orientation,
+messy strands,
 broken strands,
-disconnected strands,
-messy artifacts,
-face,
-head,
-skin,
-eyes,
-mouth,
-neck,
-body,
-blurry,
-low quality,
-deformed,
-distorted
+random hair,
+floating hair,
+deformed hair,
+artifact,
+blurry
 """
-
 # =========================
 # PROGRESS BAR
 # =========================
