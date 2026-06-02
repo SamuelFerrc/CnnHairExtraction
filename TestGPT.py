@@ -7,8 +7,8 @@ from tqdm.auto import tqdm
 # CONFIG
 # =========================
 
-input_path = "latent_diffusion_result.png"   # ou "colored_lines.png"
-output_path = "outputs/colored_lines.png"
+input_path = "outputs/colored_lines.png"   # ou "colored_lines.png"
+output_path = "graph.png"
 
 # modelo mais realista que SD 1.5 puro
 model_id = "SG161222/Realistic_Vision_V5.1_noVAE"
