@@ -1,88 +1,112 @@
 import torch
-from diffusers import StableDiffusionImg2ImgPipeline
+from diffusers import (
+    StableDiffusionControlNetPipeline,
+    ControlNetModel,
+    UniPCMultistepScheduler
+)
+
 from PIL import Image
 from tqdm.auto import tqdm
 
-# =========================
+# =========================================================
 # CONFIG
-# =========================
+# =========================================================
 
-input_path = "outputs/colored_lines.png"   # ou "colored_lines.png"
+input_path = "outputs/colored_lines.png"
 output_path = "graph.png"
 
-# modelo mais realista que SD 1.5 puro
-model_id = "SG161222/Realistic_Vision_V5.1_noVAE"
+# MODELO REALISTA
+base_model = "SG161222/Realistic_Vision_V5.1_noVAE"
+
+# CONTROLNET PARA LINEART / STRUCTURE
+controlnet_model = "lllyasviel/control_v11p_sd15_lineart"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = torch.float16 if device == "cuda" else torch.float32
 
-# =========================
-# LOAD PIPELINE
-# =========================
+# =========================================================
+# LOAD CONTROLNET
+# =========================================================
 
-pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
-    model_id,
+controlnet = ControlNetModel.from_pretrained(
+    controlnet_model,
+    torch_dtype=dtype
+)
+
+# =========================================================
+# LOAD PIPELINE
+# =========================================================
+
+pipe = StableDiffusionControlNetPipeline.from_pretrained(
+    base_model,
+    controlnet=controlnet,
     torch_dtype=dtype,
     safety_checker=None,
     requires_safety_checker=False
 )
 
+pipe.scheduler = UniPCMultistepScheduler.from_config(
+    pipe.scheduler.config
+)
+
 pipe = pipe.to(device)
 
 if device == "cuda":
+    pipe.enable_xformers_memory_efficient_attention()
     pipe.enable_attention_slicing()
 
-# =========================
+# =========================================================
 # INPUT IMAGE
-# =========================
+# =========================================================
 
 image = Image.open(input_path).convert("RGB")
-image = image.resize((768, 512))
 
-# =========================
-# PROMPTS
-# =========================
+# resolução maior preserva melhor a topologia
+image = image.resize((1024, 1024))
+
+# =========================================================
+# PROMPT
+# =========================================================
 
 prompt = """
-Generate ONLY the hair structure represented by the provided drawing.
+Generate realistic hair STRICTLY from the provided drawing.
 
-Use the input drawing strictly as the sole geometric and topological reference.
+Use ONLY the drawing as structural reference.
 
-The generated result must follow:
-- the exact flow of the strands,
-- the exact orientation,
-- the exact silhouette,
-- the exact topology,
-- the exact curvature,
-- the exact strand direction
-present in the drawing.
+Preserve EXACTLY:
+- strand flow
+- strand direction
+- topology
+- silhouette
+- curvature
+- strand grouping
+- hair distribution
 
-Do NOT invent:
-- faces,
-- heads,
-- people,
-- bodies,
-- skin,
-- backgrounds,
-- extra hairstyles,
-- accessories,
-- additional geometry.
+Do not modify the geometry.
 
-The output must contain ONLY isolated realistic hair generated directly from the input sketch.
+Do not create new hairstyle shapes.
 
-Interpret the drawing as a sparse hair topology map and reconstruct a dense realistic hair structure from it.
+Transform the white lines into realistic hair fibers while keeping the same exact structure.
 
-Preserve:
-- strand continuity,
-- strand alignment,
-- hair flow,
-- local topology,
-- strand grouping.
+Only isolated hair.
+
+No human.
+
+No face.
+
+No body.
+
+No scalp.
+
+No portrait.
 
 Black background.
-Only hair.
-Photorealistic hair fibers.
-Dense coherent hair strands.
+
+Photorealistic hair strands.
+
+Dense coherent hair fibers.
+
+Ultra detailed realistic hair texture.
 """
 
 negative_prompt = """
@@ -91,75 +115,85 @@ human,
 woman,
 man,
 face,
+portrait,
+head,
+skin,
 eyes,
 nose,
 mouth,
-skin,
-head,
-portrait,
-body,
-shoulders,
-background,
-clothes,
-accessories,
-hat,
 ears,
 neck,
+body,
+shoulders,
+clothes,
+background,
+environment,
 anime,
 cartoon,
 painting,
-illustration,
 drawing,
 sketch,
-lineart,
+illustration,
 wireframe,
-extra hair,
+lineart,
+extra strands,
 new hairstyle,
-topology changes,
-different orientation,
-messy strands,
-broken strands,
-random hair,
-floating hair,
-deformed hair,
+topology change,
+different shape,
+different direction,
+different curvature,
+messy hair,
+floating strands,
 artifact,
-blurry
+blurry,
+deformed,
+fake hair
 """
-# =========================
+
+# =========================================================
 # PROGRESS BAR
-# =========================
+# =========================================================
 
 steps = 50
+
 pbar = tqdm(total=steps)
 
 def callback(pipe, step_index, timestep, callback_kwargs):
     pbar.update(1)
     return callback_kwargs
 
-# =========================
+# =========================================================
 # GENERATE
-# =========================
+# =========================================================
 
 result = pipe(
     prompt=prompt,
     negative_prompt=negative_prompt,
+
+    # IMAGEM ESTRUTURAL
     image=image,
 
-    # Aumente para transformar mais em cabelo real
-    strength=0.88,
+    # força do ControlNet
+    controlnet_conditioning_scale=1.7,
 
-    # Força do prompt
-    guidance_scale=9.0,
+    # força do prompt
+    guidance_scale=8.5,
 
+    # passos diffusion
     num_inference_steps=steps,
+
+    # preserva mais a estrutura
+    strength=0.55,
+
     callback_on_step_end=callback
 ).images[0]
 
 pbar.close()
 
-# =========================
+# =========================================================
 # SAVE
-# =========================
+# =========================================================
 
 result.save(output_path)
+
 print("Salvo em:", output_path)
