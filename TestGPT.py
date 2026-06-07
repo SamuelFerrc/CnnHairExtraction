@@ -1,199 +1,95 @@
 import torch
+from PIL import Image
 from diffusers import (
-    StableDiffusionControlNetPipeline,
+    StableDiffusionXLControlNetPipeline,
     ControlNetModel,
-    UniPCMultistepScheduler
+    AutoencoderKL
 )
 
-from PIL import Image
-from tqdm.auto import tqdm
-
-# =========================================================
-# CONFIG
-# =========================================================
-
 input_path = "outputs/colored_lines.png"
-output_path = "graph.png"
+output_path = "outputs/hair_result.png"
 
-# MODELO REALISTA
-base_model = "SG161222/Realistic_Vision_V5.1_noVAE"
+base_model = "stabilityai/stable-diffusion-xl-base-1.0"
+controlnet_model = "ShermanG/ControlNet-Standard-Lineart-for-SDXL"
+vae_model = "madebyollin/sdxl-vae-fp16-fix"
 
-# CONTROLNET PARA LINEART / STRUCTURE
-controlnet_model = "lllyasviel/control_v11p_sd15_lineart"
+num_steps = 30
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
-dtype = torch.float16 if device == "cuda" else torch.float32
-
-# =========================================================
-# LOAD CONTROLNET
-# =========================================================
+lineart = Image.open(input_path).convert("RGB")
+lineart = lineart.resize((1024, 1024))
 
 controlnet = ControlNetModel.from_pretrained(
     controlnet_model,
-    torch_dtype=dtype
+    torch_dtype=torch.float16
 )
 
-# =========================================================
-# LOAD PIPELINE
-# =========================================================
+vae = AutoencoderKL.from_pretrained(
+    vae_model,
+    torch_dtype=torch.float16
+)
 
-pipe = StableDiffusionControlNetPipeline.from_pretrained(
+pipe = StableDiffusionXLControlNetPipeline.from_pretrained(
     base_model,
     controlnet=controlnet,
-    torch_dtype=dtype,
-    safety_checker=None,
-    requires_safety_checker=False
+    vae=vae,
+    torch_dtype=torch.float16,
+    variant="fp16"
 )
 
-pipe.scheduler = UniPCMultistepScheduler.from_config(
-    pipe.scheduler.config
-)
+pipe.enable_model_cpu_offload()
+pipe.enable_vae_slicing()
+pipe.enable_vae_tiling()
 
-pipe = pipe.to(device)
-
-if device == "cuda":
-    pipe.enable_xformers_memory_efficient_attention()
-    pipe.enable_attention_slicing()
-
-# =========================================================
-# INPUT IMAGE
-# =========================================================
-
-image = Image.open(input_path).convert("RGB")
-
-# resolução maior preserva melhor a topologia
-image = image.resize((1024, 1024))
-
-# =========================================================
-# PROMPT
-# =========================================================
+def progress_callback(pipe, step_index, timestep, callback_kwargs):
+    percent = (step_index + 1) / num_steps * 100
+    print(f"\rProgresso: {percent:.1f}% ({step_index + 1}/{num_steps})", end="")
+    return callback_kwargs
 
 prompt = """
-Generate realistic hair STRICTLY from the provided drawing.
-
-Use ONLY the drawing as structural reference.
-
-Preserve EXACTLY:
-- strand flow
-- strand direction
-- topology
-- silhouette
-- curvature
-- strand grouping
-- hair distribution
-
-Do not modify the geometry.
-
-Do not create new hairstyle shapes.
-
-Transform the white lines into realistic hair fibers while keeping the same exact structure.
-
-Only isolated hair.
-
-No human.
-
-No face.
-
-No body.
-
-No scalp.
-
-No portrait.
-
-Black background.
-
-Photorealistic hair strands.
-
-Dense coherent hair fibers.
-
-Ultra detailed realistic hair texture.
+realistic human hair,
+detailed individual hair strands,
+natural hair flow,
+hair only,
+isolated hair object,
+white background,
+high detail,
+soft lighting
 """
 
 negative_prompt = """
-person,
-human,
-woman,
-man,
 face,
-portrait,
 head,
+body,
+person,
 skin,
 eyes,
-nose,
 mouth,
-ears,
-neck,
-body,
-shoulders,
-clothes,
-background,
-environment,
-anime,
+nose,
+portrait,
 cartoon,
-painting,
-drawing,
-sketch,
-illustration,
-wireframe,
-lineart,
-extra strands,
-new hairstyle,
-topology change,
-different shape,
-different direction,
-different curvature,
-messy hair,
-floating strands,
-artifact,
+anime,
+low quality,
 blurry,
 deformed,
-fake hair
+extra objects,
+background objects
 """
-
-# =========================================================
-# PROGRESS BAR
-# =========================================================
-
-steps = 50
-
-pbar = tqdm(total=steps)
-
-def callback(pipe, step_index, timestep, callback_kwargs):
-    pbar.update(1)
-    return callback_kwargs
-
-# =========================================================
-# GENERATE
-# =========================================================
 
 result = pipe(
     prompt=prompt,
     negative_prompt=negative_prompt,
+    image=lineart,
+    controlnet_conditioning_scale=0.85,
+    guidance_scale=7.5,
+    num_inference_steps=num_steps,
+    width=1024,
+    height=1024,
+    callback_on_step_end=progress_callback
+)
 
-    # IMAGEM ESTRUTURAL
-    image=image,
+print("\nConcluído!")
 
-    # força do ControlNet
-    controlnet_conditioning_scale=1.7,
+image = result.images[0]
+image.save(output_path)
 
-    # força do prompt
-    guidance_scale=8.5,
-
-    # passos diffusion
-    num_inference_steps=steps,
-
-    # preserva mais a estrutura
-    strength=0.55,
-
-    callback_on_step_end=callback
-).images[0]
-
-pbar.close()
-
-# =========================================================
-# SAVE
-# =========================================================
-
-result.save(output_path)
-
-print("Salvo em:", output_path)
+print(f"Imagem salva em: {output_path}")
