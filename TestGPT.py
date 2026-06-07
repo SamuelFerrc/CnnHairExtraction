@@ -10,7 +10,7 @@ input_path = "outputs/colored_lines.png"
 output_path = "outputs/hair_result.png"
 
 base_model = "stabilityai/stable-diffusion-xl-base-1.0"
-controlnet_model = "promeai/sdxl-controlnet-lineart-promeai"
+controlnet_model = "ShermanG/ControlNet-Standard-Lineart-for-SDXL"
 vae_model = "madebyollin/sdxl-vae-fp16-fix"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
